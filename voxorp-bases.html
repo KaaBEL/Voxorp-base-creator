@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<!-- v.0.0.1 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <title>base creator</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000000;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body onload="init();">
+  <canvas id="0"></canvas>
+  <script>
+    "use strict";
+    var _ge;
+    function GE(v) {var t=typeof v;return document.getElementById(t===
+"number"&&v>=v?(_ge=v+1)-1:t==="undefined"?v=_ge++:v);}
+    var canvas = GE(0), ctx = canvas.getContext("2d");
+
+    // vX/vY = view x, y (position)
+    // fX/fY = from x, y (start view position)
+    // gX/gY = grab x, y (start touch posistion)
+    // sc = scale
+    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, touch = null;
+    
+    function resizeWindow() {
+      var  w = window.innerWidth, h = window.innerHeight, ratio;
+      if (w > 4096 || h > 4096)
+        if (w > h) {
+          h = h * 4096 / w;
+          w = 4096;
+        } else {
+          w = w * 4096 / h;
+          h = 4096;
+        }
+      canvas.width = w;
+      canvas.height = h;
+      render();
+    }
+
+    function init() {
+      resizeWindow();
+    }
+
+    canvas.onwheel = function (e) {
+      if (!e.ctrlKey)
+        return;
+      var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+      sc += sc / e.deltaY * 10;
+      e.preventDefault();
+      vX = (vX - w) * sc / prev + w;
+      vY = (vY - h) * sc / prev + h;
+      console.log(vX, vY);
+      render();
+    }
+    canvas.onmousemove = function (e) {
+      if (!(e.buttons & 1))
+        return;
+      vX += e.movementX;
+      vY += e.movementY;
+      render();
+    }
+
+    function getTouch(e) {
+      for (var ts = e.touches, l = ts.length; l-- > 0;)
+        if (ts[l].identifier === touch.identifier)
+          return touch = ts[l];
+      return touch = null;
+    }
+
+    canvas.ontouchstart = function (e) {
+      console.log(touch, touch ? getTouch(e) : null, vX);
+      if (touch && getTouch(e))
+        return;
+      touch = e.changedTouches[0];
+      fX = vX;
+      fY = vY;
+      gX = touch.pageX;
+      gY = touch.pageY;
+    }
+    canvas.ontouchmove = function (e) {
+      if (!getTouch(e))
+        return;
+      vX = fX + touch.pageX - gX;
+      vY = fY + touch.pageY - gY;
+      render();
+    }
+
+    window.onresize = resizeWindow;
+  </script>
+  <script type="text/javascript" src="voxorp-bases.js"></script>
+</body>
+</html>
