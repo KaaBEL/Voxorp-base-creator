@@ -28,76 +28,108 @@
 "number"&&v>=v?(_ge=v+1)-1:t==="undefined"?v=_ge++:v);}
     var canvas = GE(0), ctx = canvas.getContext("2d");
 
+    // press is touch or click
+
     // vX/vY = view x, y (position)
     // fX/fY = from x, y (start view position)
-    // gX/gY = grab x, y (start touch posistion)
+    // gX/gY = grab x, y (start press posistion)
     // sc = scale
-    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, touch = null;
-    
-    function resizeWindow() {
-      var  w = window.innerWidth, h = window.innerHeight, ratio;
-      if (w > 4096 || h > 4096)
-        if (w > h) {
-          h = h * 4096 / w;
-          w = 4096;
-        } else {
-          w = w * 4096 / h;
-          h = 4096;
-        }
-      canvas.width = w;
-      canvas.height = h;
-      render();
+    // cStart = press start
+    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, cStart = 0, touch = null;
+
+    function render() {
+      return;
+    }
+
+    function press(x, y) {
+      return console.log(x, y);
     }
 
     function init() {
+      // settings: press time legth, precision, <-, 
+      var pressLength = 350, clickP = 7, touchP = 13;
+
+      function resizeWindow() {
+        var  w = window.innerWidth, h = window.innerHeight;
+        if (w > 4096 || h > 4096)
+          if (w > h) {
+            h = h * 4096 / w;
+            w = 4096;
+          } else {
+            w = w * 4096 / h;
+            h = 4096;
+          }
+        canvas.width = w;
+        canvas.height = h;
+        render();
+      }
+
       resizeWindow();
-    }
 
-    canvas.onwheel = function (e) {
-      if (!e.ctrlKey)
-        return;
-      var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-      sc += sc / e.deltaY * 10;
-      e.preventDefault();
-      vX = (vX - w) * sc / prev + w;
-      vY = (vY - h) * sc / prev + h;
-      console.log(vX, vY);
-      render();
-    }
-    canvas.onmousemove = function (e) {
-      if (!(e.buttons & 1))
-        return;
-      vX += e.movementX;
-      vY += e.movementY;
-      render();
-    }
+      window.onresize = resizeWindow;
 
-    function getTouch(e) {
-      for (var ts = e.touches, l = ts.length; l-- > 0;)
-        if (ts[l].identifier === touch.identifier)
-          return touch = ts[l];
-      return touch = null;
-    }
+      canvas.onwheel = function (e) {
+        if (!e.ctrlKey)
+          return;
+        var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+        sc -= sc / e.deltaY * 10;
+        vX = (vX - w) * sc / prev + w;
+        vY = (vY - h) * sc / prev + h;
+        e.preventDefault();
+        render();
+      };
+      canvas.onmousedown = function (e) {
+        cStart = Date.now();
+        gX = e.pageX - canvas.offsetLeft;
+        gY = e.pageY - canvas.offsetTop;
+      }
+      canvas.onmousemove = function (e) {
+        if (!(e.buttons & 1))
+          return;
+        vX += e.movementX;
+        vY += e.movementY;
+        render();
+      };
+      canvas.onmouseup = function (e) {
+        if (Date.now() > cStart + pressLength)
+          return;
+        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop; 
+        if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
+          return;
+        console.log(clickP, Math.abs(gX - x), Math.abs(gY - y))
+        press(x, y);
+      }
 
-    canvas.ontouchstart = function (e) {
-      console.log(touch, touch ? getTouch(e) : null, vX);
-      if (touch && getTouch(e))
-        return;
-      touch = e.changedTouches[0];
-      fX = vX;
-      fY = vY;
-      gX = touch.pageX;
-      gY = touch.pageY;
-    }
-    canvas.ontouchmove = function (e) {
-      if (!getTouch(e))
-        return;
-      vX = fX + touch.pageX - gX;
-      vY = fY + touch.pageY - gY;
-      render();
-    }
+      function getTouch(e) {
+        for (var ts = e.touches, l = ts.length; l-- > 0;)
+          if (ts[l].identifier === touch.identifier)
+            return touch = ts[l];
+        return touch = null;
+      };
 
-    window.onresize = resizeWindow;
+      canvas.ontouchstart = function (e) {
+        console.log(touch, touch ? getTouch(e) : null, vX);
+        if (touch && !getTouch(e))
+          return;
+        touch = e.changedTouches[0];
+        fX = vX;
+        fY = vY;
+        gX = touch.pageX;
+        gY = touch.pageY;
+        e.preventDefault();
+        render();
+      };
+      canvas.ontouchmove = function (e) {
+        if (!getTouch(e))
+          return;
+        vX = fX + touch.pageX - gX;
+        vY = fY + touch.pageY - gY;
+        e.preventDefault();
+        render();
+      };
+
+      document.body.removeAttribute("onload");
+    }
   </script>
   <script type="text/javascript" src="voxorp-bases.js"></script>
 </body>
