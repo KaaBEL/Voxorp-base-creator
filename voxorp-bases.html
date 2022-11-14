@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.2 -->
+<!-- v.0.0.2.5 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -35,7 +35,8 @@
     // gX/gY = grab x, y (start press posistion)
     // sc = scale
     // cStart = press start
-    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, cStart = 0, touch = null;
+    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, cStart = 0, tStart = 0,
+      touch = null;
 
     function render() {
       return;
@@ -96,7 +97,6 @@
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop; 
         if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
           return;
-        console.log(clickP, Math.abs(gX - x), Math.abs(gY - y))
         press(x, y);
       }
 
@@ -108,9 +108,9 @@
       };
 
       canvas.ontouchstart = function (e) {
-        console.log(touch, touch ? getTouch(e) : null, vX);
         if (touch && !getTouch(e))
           return;
+        tStart = Date.now();
         touch = e.changedTouches[0];
         fX = vX;
         fY = vY;
@@ -127,6 +127,19 @@
         e.preventDefault();
         render();
       };
+      canvas.ontouchend = canvas.ontouchcancel = function (e) {
+        if (!getTouch({touches: e.changedTouches}))
+          return;
+        if (Date.now() > tStart + pressLength)
+          return touch = null;
+        console.log("?");
+        var x = touch.pageX - canvas.offsetLeft,
+          y = touch.pageY - canvas.offsetTop;
+        touch = null;
+        if (Math.abs(gX - x) > touchP && Math.abs(gY - y) > touchP)
+          return;
+        press(x, y);
+      }
 
       document.body.removeAttribute("onload");
     }
