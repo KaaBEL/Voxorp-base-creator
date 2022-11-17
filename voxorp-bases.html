@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.2.5 -->
+<!-- v.0.0.2.8 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,7 @@
   <style>
     body {
       margin: 0;
+      position: relative;
       background-color: #000000;
       overflow: hidden;
     }
@@ -21,6 +22,12 @@
 </head>
 <body onload="init();">
   <canvas id="0"></canvas>
+  <div style="position: absolute;color:white;top:0;">
+    <div id="87"><span>Pie***l się</span></div>
+    <div id="88"><span>Pie***l się</span></div>
+    <div id="89"><span>Pie***l się</span></div>
+    <div id="85" style="color:#59b"><span>Pie***l się</span></div>
+  </div>
   <script>
     "use strict";
     var _ge;
@@ -36,7 +43,7 @@
     // sc = scale
     // cStart = press start
     var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, cStart = 0, tStart = 0,
-      touch = null;
+      touch = null, touch_2 = null;
 
     function render() {
       return;
@@ -106,9 +113,117 @@
             return touch = ts[l];
         return touch = null;
       };
+      
+      function touchesStr(t) {
+        var s = "[", list = 2, touchList = [t.touches, t.changedTouches];
+        while (list--) {
+          s += "[";
+          for (var ts = touchList[list], i = ts.length; i-- > 0;)
+            s += ts[i].identifier + ",";
+              //+ ":" + (ts[i].pageX | 0) + "_" + (ts[i].pageY | 0) + ",";
+          s = s.slice(0, -1) + "],";
+        }
+        return s.slice(0, -1);
+      }
+
+      /** @typedef {number} integer */
+      /** @type {Array<TouchDat>} global touches */
+      var tchs = [],
+      /** @type {Array<number>} Touch.identifier-s of global touches */
+        tIds = [];
+      tchs.aDefaultHolder = -1;
+  
+      function TouchDat(touch) {
+      /** @type {Touch} current touch source */
+        this.src = touch;
+      /** @type {integer} */
+        this.x = Math.floor(touch.pageX - canvas.offsetLeft);
+      /** @type {integer} */
+        this.y = Math.floor(touch.pageY - canvas.offsetTop);
+      /** @type {number} previous time touched
+        this.p = Date.now();
+      /** @type {number} allow default score */
+        this.aDefault = 0;
+      }
+
+      console.error = (function () {var error = console.error;return function
+() {for (var i = arguments.length, arr = [],
+el = document.createElement("span"); i-- > 0;)arr[i] = arguments[i];
+l.style.color = "#d11943";el.innerText = arr.join("");
+GE(85).appendChild(el);error.apply(console, arr);};})();
+      var logIdx = 0, prevClr = 0, clr = ["#ffffff", "#447c55", "#d11943"],
+        logSrc;
+      function spanLog(clrId, s) {
+        if (logIdx && prevClr === clrId)
+          return logSrc.childNodes[--logIdx].innerText += "s";
+        var el = document.createElement("span");
+        el.style.color = clr[prevClr = clrId];
+        el.innerText = s;
+        if (logSrc.childNodes[++logIdx])
+          logSrc.replaceChild(el, logSrc.childNodes[logIdx - 1]);
+        else
+          logSrc.appendChild(el);
+      }
+
+      /** updates global touches to current
+       * @param {0|1|2} typ type of touch event
+       * @param {TouchEvent} touches
+       */
+      function updateTouches(typ, touches) {
+        var c, el = GE(87 + typ);
+        for (var i = 0, j, l, tStr = "global touches"; i < l;) {
+          if ((j = tIds.indexOf(touches[i].identifier)) < 0)
+            throw new Error("touch identifier not found within " + tStr);
+          spanLog(tchs[j] === touches[i] << 1, j + ",]"[i + 1 < l]);
+          tchs[j] = touches[i++];
+        }
+      }
+      /** 
+       * @param {0|1|2} typ type of touch event
+       * 0: start, 1: move, 2: end|cancel
+       * @param {TouchEvent} e
+       */
+      function checkTouches(typ, e) {
+        logIdx = 0, logSrc = GE(87 + typ);
+        if (typ === 0)
+          updateTouches(typ, e.touches)
+        if (typ === 1)
+          spanLog(0, "[");
+        /** i = index for changedTouches, j = index for tchs and tIds */
+        var i = 0, j, l, tStr = "global touches", touches = e.changedTouches;
+        // repeat for length happens only for touchstart or touch-end|cancel
+        for (l = touches.length * (typ !== 1); i < l;) {
+          if (typ === 0 ^ (j = tIds.indexOf(touches[i].identifier)) < 0)
+            if (typ === 0) {
+              console.error("index: " + j + " should not be within " + tStr);
+              tchs[j] = new TouchDat(touches[i]);
+            } else
+              console.error("touch id: " + j + " is missing within " + tStr);
+          else if (typ === 0) {
+          // for touchstart // tchs[j] same as tchs[j] !== null
+            for (j = 0; j < tchs.length && tchs[j];)
+              j++;
+            tIds.length = tchs.length += j >= touches.length;
+            tchs[j] = new TouchDat(touches[i]);
+            tIds[j] = touches[i].identifier;
+          } else {
+          // for touchend // !tchs[j] same as tchs[j] === null
+            tchs[j] = null;
+            tIds[j] = -1;
+            while (j === tchs.length && !tchs[j])
+              tIds.length = --tchs.length;
+          }
+        }
+          spanLog(0, j + ",]"[++i < l]);
+        if (typ !== 0)
+          updateTouches(typ, e.touches)
+      }
 
       canvas.ontouchstart = function (e) {
-        if (touch && !getTouch(e))
+        
+        GE(87).innerText = touchesStr(e);
+        e.preventDefault();
+        if (touch && getTouch(e))
           return;
         tStart = Date.now();
         touch = e.changedTouches[0];
@@ -116,20 +231,22 @@
         fY = vY;
         gX = touch.pageX;
         gY = touch.pageY;
-        e.preventDefault();
         render();
       };
       canvas.ontouchmove = function (e) {
+        GE(88).innerText = touchesStr(e);
+        e.preventDefault();
         if (!getTouch(e))
           return;
         vX = fX + touch.pageX - gX;
         vY = fY + touch.pageY - gY;
-        e.preventDefault();
         render();
       };
       canvas.ontouchend = canvas.ontouchcancel = function (e) {
+        GE(89).innerText = touchesStr(e);
         if (!getTouch({touches: e.changedTouches}))
           return;
+        GE(85).innerText = touchesStr(e) + Date.now();
         if (Date.now() > tStart + pressLength)
           return touch = null;
         console.log("?");

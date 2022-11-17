@@ -1,5 +1,5 @@
 "use strict";
-// v0.0.2
+// v0.0.2.8
 
 var hiddenLogs = [],
 /** @type {Array<string>} */
@@ -62,7 +62,7 @@ function VoxTile(tile) {
 
 /** unsealed Typed array!
  * @constructor
- * @param {Array<object|Array<>>} arr
+ * @param {Array<object|null|Array<>>} arr
  * @returns {renderedVoxObjects}
  */
 function RenderedVoxObjects(arr) {
@@ -74,13 +74,16 @@ function RenderedVoxObjects(arr) {
   this.push = function push() {
     for (var i = arguments.length, args = [], a; i-- > 0;) {
       a = arguments[i];
-      args[i] = a instanceof VoxTile ? a : new VoxTile(a);
+      args[i] = a instanceof VoxTile ? a : a ? new VoxTile(a) : null;
     }
     return [].push.apply(this, args);
   }
   this.toString = function toString() {
     for (var i = 0, s = ""; i < this.length; i++)
-      s += this[i].name + "," + this[i].x + "," + this[i].y + "; ";
+      if (this[i] === null)
+        s += "null; "
+      else
+        s += this[i].name + "," + this[i].x + "," + this[i].y + "; ";
     return s;
   }
 }
@@ -89,7 +92,7 @@ function RenderedVoxObjects(arr) {
  * @property {number} index.i
  * @property {boolean} index.insert
  */
-/** binary search from RenderedVoxObjects 
+/** binary search in (where) RenderedVoxObjects 
  * @param {RenderedVoxObjects} where
  * @param {number} x tile position
  * @param {number} y tile position
@@ -116,10 +119,8 @@ function binaryFindPos(where, x, y) {
 }
 
 var rendered = new RenderedVoxObjects([["building", "Wall", 0, 0, null]]);
-(rendered[1])
+
 function placeRandomTile(x, y) {
-  x = Math.floor((x - vX) / sc);
-  y = Math.floor((y - vY) / sc);
   var rand = Math.random() * 5 | 0, index = binaryFindPos(rendered, x, y);
   var name = "Wall,Scorer,Dynamo empty,Crate,Laser tile".split(",")[rand];
   var tile = new VoxTile("building", name, x, y, null);
@@ -144,6 +145,8 @@ function placeRandomTile(x, y) {
 
 // ! overwrites function press for handling UIs from previous scripts
 function press(x, y) {
+  x = Math.floor((x - vX) / sc);
+  y = Math.floor((y - vY) / sc);
   placeRandomTile(x, y);
 }
 
@@ -167,6 +170,7 @@ function render() {
 
   canvas.width = canvas.width;
   while (i-- > 0)
+  // null in rendered array is empty position
   // unloaded images returns null, undefined image returns undefined
     if (r[i] && imageByName(r[i].name)) {
       ctx.drawImage(img, r[i].x * sc + vX, r[i].y * sc + vY, sc, sc);
