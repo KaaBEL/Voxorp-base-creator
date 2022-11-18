@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<!-- v.0.0.2.8 -->
+<!-- v.0.0.2.10 -->
+<!-- here (in this version) I found how to debug and write the code from PC
+on android -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -21,12 +23,14 @@
   </style>
 </head>
 <body onload="init();">
-  <canvas id="0"></canvas>
-  <div style="position: absolute;color:white;top:0;">
-    <div id="87"><span>Pie***l się</span></div>
-    <div id="88"><span>Pie***l się</span></div>
-    <div id="89"><span>Pie***l się</span></div>
-    <div id="85" style="color:#59b"><span>Pie***l się</span></div>
+  <div id="8">
+    <canvas id="0"></canvas>
+    <div style="position: absolute;color:white;top:0;">
+      <div id="87"><span>Pie***l się</span></div>
+      <div id="88"><span>Pie***l się</span></div>
+      <div id="89"><span>Pie***l się</span></div>
+      <div id="85" style="color:#59b"><span>Pie***l się</span></div>
+    </div>
   </div>
   <script>
     "use strict";
@@ -43,7 +47,7 @@
     // sc = scale
     // cStart = press start
     var vX = 0, vY = 0, fX, fY, gX, gY, sc = 40, cStart = 0, tStart = 0,
-      touch = null, touch_2 = null;
+      touch = null, touch_2 = null, bd = GE(8);
 
     function render() {
       return;
@@ -76,7 +80,7 @@
 
       window.onresize = resizeWindow;
 
-      canvas.onwheel = function (e) {
+      bd.onwheel = function (e) {
         if (!e.ctrlKey)
           return;
         var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
@@ -86,25 +90,67 @@
         e.preventDefault();
         render();
       };
-      canvas.onmousedown = function (e) {
+      bd.onmousedown = function (e) {
         cStart = Date.now();
         gX = e.pageX - canvas.offsetLeft;
         gY = e.pageY - canvas.offsetTop;
       }
-      canvas.onmousemove = function (e) {
+      bd.onmousemove = function (e) {
         if (!(e.buttons & 1))
           return;
         vX += e.movementX;
         vY += e.movementY;
         render();
       };
-      canvas.onmouseup = function (e) {
+      bd.onmouseup = function (e) {
         if (Date.now() > cStart + pressLength)
           return;
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop; 
         if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
           return;
         press(x, y);
+      }
+
+      /** touch logs
+       * @namespace init
+       * @typedef {string} color
+       */
+      var logIdx = 0,
+      prevClr = 0,
+      /** @type {Array<color>} */
+      clr = ["#ffffff", "#447c55", "#d11943"],
+      /** @type {HTMLDivElement} */
+      logSrc,
+      touchErrors = false;
+      console.error = (function () {
+        // that's actualy very funny trick (overwriting existing function)
+        // :D
+        var error = console.error;
+        return function () {
+          for (var i = arguments.length, arr = [],
+          el = document.createElement("span"); i-- > 0;)
+            arr[i] = arguments[i];
+          el.style.color = "#d11943";
+          el.innerText = arr.join("");
+          GE(85).appendChild(el);
+          error.apply(console, arr);
+        };
+      })();
+      function spanLog(clrId, s) {
+        if (logIdx && prevClr === clrId)
+          return logSrc.childNodes[logIdx - 1].innerText += s;
+        var el = document.createElement("span");
+        el.style.color = clr[prevClr = clrId];
+        el.innerText = s;
+        if (logSrc.childNodes[logIdx])
+          logSrc.replaceChild(el, logSrc.childNodes[logIdx]);
+        else
+          logSrc.appendChild(el);
+        logIdx++;
+      }
+      function completeSpanLog() {
+        while (logIdx < logSrc.childNodes.length)
+          logSrc.removeChild(logSrc.childNodes[logIdx]);
       }
 
       function getTouch(e) {
@@ -127,12 +173,7 @@
       }
 
       /** @typedef {number} integer */
-      /** @type {Array<TouchDat>} global touches */
-      var tchs = [],
-      /** @type {Array<number>} Touch.identifier-s of global touches */
-        tIds = [];
-      tchs.aDefaultHolder = -1;
-  
+
       function TouchDat(touch) {
       /** @type {Touch} current touch source */
         this.src = touch;
@@ -140,42 +181,44 @@
         this.x = Math.floor(touch.pageX - canvas.offsetLeft);
       /** @type {integer} */
         this.y = Math.floor(touch.pageY - canvas.offsetTop);
-      /** @type {number} previous time touched
+      /** @type {integer} movement */
+        this.movX = 0;
+      /** @type {integer} movement */
+        this.movY = 0;
+      /** @type {number} previous time touched */
         this.p = Date.now();
-      /** @type {number} allow default score */
+      /** @type {number} (signed) score of allow (not prevent) default */
         this.aDefault = 0;
       }
-
-      console.error = (function () {var error = console.error;return function
-() {for (var i = arguments.length, arr = [],
-el = document.createElement("span"); i-- > 0;)arr[i] = arguments[i];
-l.style.color = "#d11943";el.innerText = arr.join("");
-GE(85).appendChild(el);error.apply(console, arr);};})();
-      var logIdx = 0, prevClr = 0, clr = ["#ffffff", "#447c55", "#d11943"],
-        logSrc;
-      function spanLog(clrId, s) {
-        if (logIdx && prevClr === clrId)
-          return logSrc.childNodes[--logIdx].innerText += "s";
-        var el = document.createElement("span");
-        el.style.color = clr[prevClr = clrId];
-        el.innerText = s;
-        if (logSrc.childNodes[++logIdx])
-          logSrc.replaceChild(el, logSrc.childNodes[logIdx - 1]);
-        else
-          logSrc.appendChild(el);
-      }
+      /** @type {Array<TouchDat>} global touches */
+      var tchs = [],
+      /** @type {Array<number>} Touch.identifier-s of global touches */
+        tIds = [],
+      /** @type {number} index of touch which allows default */
+        allowDefaultIdx = -1;
 
       /** updates global touches to current
        * @param {0|1|2} typ type of touch event
        * @param {TouchEvent} touches
        */
-      function updateTouches(typ, touches) {
-        var c, el = GE(87 + typ);
-        for (var i = 0, j, l, tStr = "global touches"; i < l;) {
+      function updateTouches(touches, prev1) {
+        var i = 0, j, l = touches.length, x, y, tStr = "global touches", t;
+        spanLog(0, i < l ? "[" : "");
+        while (i < l) {
           if ((j = tIds.indexOf(touches[i].identifier)) < 0)
             throw new Error("touch identifier not found within " + tStr);
-          spanLog(tchs[j] === touches[i] << 1, j + ",]"[i + 1 < l]);
-          tchs[j] = touches[i++];
+          spanLog((tchs[j] === touches[i]) << 1, j + "],"[+(i + 1 < l)]);
+          (t = tchs[j]).src = touches[i++];
+          x = Math.floor(t.src.pageX - canvas.offsetLeft);
+          y = Math.floor(t.src.pageY - canvas.offsetTop);
+          t.movX = x - t.x;
+          t.movY = y - t.y;
+          t.x = x;
+          t.y = y;
+        }
+        if ((j = allowDefaultIdx) !== -1) {
+          tchs[j].aDefault += tchs[j].movY * 2 - Math.abs(tchs[j].movX);
+          tchs[j].aDefault < 0 ? allowDefaultIdx = -1 : 0;
         }
       }
       /** 
@@ -185,46 +228,53 @@ GE(85).appendChild(el);error.apply(console, arr);};})();
        */
       function checkTouches(typ, e) {
         logIdx = 0, logSrc = GE(87 + typ);
-        if (typ === 0)
-          updateTouches(typ, e.touches)
-        if (typ === 1)
-          spanLog(0, "[");
+        if (typ > 1)
+          updateTouches(e.touches)
+        if (typ !== 1)
+          spanLog(0, "changedTouches:[");
         /** i = index for changedTouches, j = index for tchs and tIds */
         var i = 0, j, l, tStr = "global touches", touches = e.changedTouches;
         // repeat for length happens only for touchstart or touch-end|cancel
-        for (l = touches.length * (typ !== 1); i < l;) {
-          if (typ === 0 ^ (j = tIds.indexOf(touches[i].identifier)) < 0)
-            if (typ === 0) {
-              console.error("index: " + j + " should not be within " + tStr);
+        if(1>1)console.log("fThis");
+        for (l = touches.length * (typ !== 1); i < l; i++) {
+          if (typ === 0 ^ (j = tIds.indexOf(touches[i].identifier)) < 0) {
+            if (typ === 0 && touchErrors) {
               tchs[j] = new TouchDat(touches[i]);
-            } else
+              console.error("index: " + j + " should not be within " + tStr);
+            } else if (typ === 0)
+              tchs[j] = new TouchDat(touches[i]);
+            else if (touchErrors)
               console.error("touch id: " + j + " is missing within " + tStr);
-          else if (typ === 0) {
+          } else if (typ === 0) {
           // for touchstart // tchs[j] same as tchs[j] !== null
             for (j = 0; j < tchs.length && tchs[j];)
               j++;
-            tIds.length = tchs.length += j >= touches.length;
+            tIds.length = tchs.length += j >= tchs.length;
             tchs[j] = new TouchDat(touches[i]);
             tIds[j] = touches[i].identifier;
+            if (allowDefaultIdx == -1 && touches[i].clientY < touchP * 2)
+              tchs[allowDefaultIdx = j].aDefault = 21;
           } else {
           // for touchend // !tchs[j] same as tchs[j] === null
             tchs[j] = null;
             tIds[j] = -1;
+            j === allowDefaultIdx ? allowDefaultIdx = -1 : 0;
             while (j === tchs.length && !tchs[j])
               tIds.length = --tchs.length;
           }
+          spanLog(0, j + "],"[+(i + 1 < l)]);
         }
-          spanLog(0, j + ",]"[++i < l]);
-        if (typ !== 0)
-          updateTouches(typ, e.touches)
+        if (typ <= 1)
+          updateTouches(e.touches);
+        completeSpanLog();
+        if (allowDefaultIdx === -1)
+          e.preventDefault();
       }
 
-      canvas.ontouchstart = function (e) {
-        
-        GE(87).innerText = touchesStr(e);
-        e.preventDefault();
-        if (touch && getTouch(e))
-          return;
+      bd.ontouchstart = function (e) {
+        console.log();
+        checkTouches(0, e);
+        return;
         tStart = Date.now();
         touch = e.changedTouches[0];
         fX = vX;
@@ -233,22 +283,18 @@ GE(85).appendChild(el);error.apply(console, arr);};})();
         gY = touch.pageY;
         render();
       };
-      canvas.ontouchmove = function (e) {
-        GE(88).innerText = touchesStr(e);
-        e.preventDefault();
-        if (!getTouch(e))
-          return;
+      bd.ontouchmove = function (e) {
+        checkTouches(1, e);
+        return;
         vX = fX + touch.pageX - gX;
         vY = fY + touch.pageY - gY;
         render();
       };
-      canvas.ontouchend = canvas.ontouchcancel = function (e) {
-        GE(89).innerText = touchesStr(e);
-        if (!getTouch({touches: e.changedTouches}))
-          return;
-        GE(85).innerText = touchesStr(e) + Date.now();
+      bd.ontouchend = bd.ontouchcancel = function (e) {
+        checkTouches(2, e);
+        return;
         if (Date.now() > tStart + pressLength)
-          return touch = null;
+          return
         console.log("?");
         var x = touch.pageX - canvas.offsetLeft,
           y = touch.pageY - canvas.offsetTop;

@@ -1,5 +1,5 @@
 "use strict";
-// v0.0.2.8
+// v0.0.2.9
 
 var hiddenLogs = [],
 /** @type {Array<string>} */
@@ -170,7 +170,7 @@ function render() {
 
   canvas.width = canvas.width;
   while (i-- > 0)
-  // null in rendered array is empty position
+  // null in array rendered is empty position
   // unloaded images returns null, undefined image returns undefined
     if (r[i] && imageByName(r[i].name)) {
       ctx.drawImage(img, r[i].x * sc + vX, r[i].y * sc + vY, sc, sc);
