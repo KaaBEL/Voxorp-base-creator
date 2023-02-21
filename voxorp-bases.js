@@ -1,5 +1,5 @@
 "use strict";
-// v0.0.2.9
+// v0.0.2.10
 
 var hiddenLogs = [],
 /** @type {Array<string>} */
@@ -176,3 +176,64 @@ function render() {
       ctx.drawImage(img, r[i].x * sc + vX, r[i].y * sc + vY, sc, sc);
     }
 }
+
+// voxorp-fun.js
+function setRandomTile(x, y) {
+  var rand = Math.random() * 5 | 0, index = binaryFindPos(rendered, x, y);
+  var name = "Wall,Scorer,Dynamo empty,Crate,Laser tile".split(",")[rand];
+  var tile = new VoxTile("building", name, x, y, null);
+  var i = index.i;
+  if (index.insert)
+    while (i < rendered.length && rendered[i])
+      i++;
+  if (i >= rendered.length)
+    rendered.length++;
+  if (index.insert)
+    for (; i > index.i; i--)
+      rendered[i] = rendered[i - 1];
+  rendered[i] = tile;
+}
+var lodBar = new RenderedVoxObjects([]);
+function loadB() {
+  sc = 40, vX = vY = 0;
+  lodBar.push(new VoxTile("building", "Laser tile", lodBar.length, 0, null));
+  var r = rendered;
+  rendered = lodBar;
+  render();
+  rendered = r;
+}
+function tOut() {
+if (tOut.f())
+  setTimeout(tOut, 1000);
+else
+  console.warn("end of test");
+}
+function voxorpFun0() {
+  var i = 65535
+  tOut.f = function () {
+    for (; i-- > 0 && (i & 0x0fff) !== 0x0fff; i)
+      setRandomTile(i & 255, i >> 8);
+    loadB(console.log(0));
+    return i > 0 ? true : voxorpFun1();
+  }
+  tOut();
+}
+function voxorpFun1() {
+  vX = vY = 0;
+  render();
+  var i = 0, arr = [1, 2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 129, 255, 432];
+  tOut.f = function () {
+    sc = 928 / arr[i++];
+    render();
+    return i < arr.length;
+  };
+  tOut();
+}
+
+window.onkeydown = function (e) {
+  if (e.key !== "F7")
+    return;
+  window.onkeydown = null;
+  voxorpFun0();
+};
+var F7 = {valueOf: voxorpFun0};
