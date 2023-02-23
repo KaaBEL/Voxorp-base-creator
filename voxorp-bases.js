@@ -225,8 +225,13 @@ function voxorpFun1() {
   tOut.f = function () {
     sc = 928 / arr[i++];
     render();
-    return i < arr.length;
-  };
+    if (i < arr.length)
+      return (setTimeout(function () {
+        sc = 40;
+      }, 9000), !0);
+    else
+      return !1;
+};
   tOut();
 }
 
